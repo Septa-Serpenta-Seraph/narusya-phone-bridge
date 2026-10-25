@@ -97,6 +97,7 @@ class BridgeServer(
             "/apps" -> handleApps()
             "/screenshot" -> handleScreenshot()
             "/notifications" -> handleNotifications()
+            "/notify" -> handleNotify(session)
             else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "application/json",
                 """{"error":"not found","uri":"$uri"}""")
         }
@@ -217,6 +218,42 @@ class BridgeServer(
         val json = JSONObject()
         json.put("note", "Notification access requires NotificationListenerService. Not yet implemented. Use: adb shell dumpsys notification")
         return jsonResponse(json)
+    }
+
+    private fun handleNotify(session: IHTTPSession): Response {
+        // Parse POST body
+        val files = HashMap<String, String>()
+        session.parseBody(files)
+        val body = files["postData"] ?: ""
+        val json = JSONObject(body.ifEmpty { "{}" })
+        val title = json.optString("title", "Narusya")
+        val message = json.optString("body", "Hello from Narusya")
+
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "narusya_notify"
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Narusya Notifications", NotificationManager.IMPORTANCE_DEFAULT)
+            nm.createNotificationChannel(channel)
+        }
+
+        val notification = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            Notification.Builder(context, channelId)
+        } else {
+            Notification.Builder(context)
+        }
+            .setContentTitle(title)
+            .setContentText(message)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setAutoCancel(true)
+            .build()
+
+        nm.notify(System.currentTimeMillis().toInt(), notification)
+
+        val resp = JSONObject()
+        resp.put("status", "sent")
+        resp.put("title", title)
+        return jsonResponse(resp)
     }
 
     private fun jsonResponse(json: JSONObject): Response {
