@@ -98,6 +98,13 @@ class BridgeServer(
             "/screenshot" -> handleScreenshot()
             "/notifications" -> handleNotifications()
             "/notify" -> handleNotify(session)
+            "/open" -> handleOpen(session)
+            "/sms" -> handleSms(session)
+            "/clipboard" -> handleClipboard(session)
+            "/vibrate" -> handleVibrate(session)
+            "/toast" -> handleToast(session)
+            "/location" -> handleLocation()
+            "/camera" -> handleCamera()
             else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "application/json",
                 """{"error":"not found","uri":"$uri"}""")
         }
@@ -253,6 +260,185 @@ class BridgeServer(
         val resp = JSONObject()
         resp.put("status", "sent")
         resp.put("title", title)
+        return jsonResponse(resp)
+    }
+
+    private fun handleOpen(session: IHTTPSession): Response {
+        val files = HashMap<String, String>()
+        session.parseBody(files)
+        val body = files["postData"] ?: ""
+        val json = JSONObject(body.ifEmpty { "{}" })
+        val pkg = json.optString("package", "")
+        val resp = JSONObject()
+
+        if (pkg.isEmpty()) {
+            resp.put("error", "package name required")
+            return jsonResponse(resp)
+        }
+
+        try {
+            val pm = context.packageManager
+            val intent = pm.getLaunchIntentForPackage(pkg)
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                resp.put("status", "opened")
+                resp.put("package", pkg)
+            } else {
+                resp.put("error", "app not found or not launchable")
+            }
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
+    }
+
+    private fun handleSms(session: IHTTPSession): Response {
+        val files = HashMap<String, String>()
+        session.parseBody(files)
+        val body = files["postData"] ?: ""
+        val json = JSONObject(body.ifEmpty { "{}" })
+        val to = json.optString("to", "")
+        val message = json.optString("message", "")
+        val resp = JSONObject()
+
+        if (to.isEmpty() || message.isEmpty()) {
+            resp.put("error", "to and message required")
+            return jsonResponse(resp)
+        }
+
+        try {
+            val smsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                context.getSystemService(android.telephony.SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                android.telephony.SmsManager.getDefault()
+            }
+            smsManager.sendTextMessage(to, null, message, null, null)
+            resp.put("status", "sent")
+            resp.put("to", to)
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
+    }
+
+    private fun handleClipboard(session: IHTTPSession): Response {
+        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val resp = JSONObject()
+
+        if (session.method == Method.GET) {
+            val clip = cm.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                resp.put("text", clip.getItemAt(0).text?.toString() ?: "")
+            } else {
+                resp.put("text", "")
+            }
+        } else {
+            val files = HashMap<String, String>()
+            session.parseBody(files)
+            val body = files["postData"] ?: ""
+            val json = JSONObject(body.ifEmpty { "{}" })
+            val text = json.optString("text", "")
+            val clip = android.content.ClipData.newPlainText("Narusya", text)
+            cm.setPrimaryClip(clip)
+            resp.put("status", "set")
+            resp.put("text", text)
+        }
+        return jsonResponse(resp)
+    }
+
+    private fun handleVibrate(session: IHTTPSession): Response {
+        val files = HashMap<String, String>()
+        session.parseBody(files)
+        val body = files["postData"] ?: ""
+        val json = JSONObject(body.ifEmpty { "{}" })
+        val duration = json.optInt("duration", 500)
+        val resp = JSONObject()
+
+        try {
+            val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+                vm.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(android.os.VibrationEffect.createOneShot(duration.toLong(), android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(duration.toLong())
+            }
+            resp.put("status", "vibrated")
+            resp.put("duration", duration)
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
+    }
+
+    private fun handleToast(session: IHTTPSession): Response {
+        val files = HashMap<String, String>()
+        session.parseBody(files)
+        val body = files["postData"] ?: ""
+        val json = JSONObject(body.ifEmpty { "{}" })
+        val message = json.optString("message", "")
+        val resp = JSONObject()
+
+        if (message.isEmpty()) {
+            resp.put("error", "message required")
+            return jsonResponse(resp)
+        }
+
+        try {
+            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+            resp.put("status", "shown")
+            resp.put("message", message)
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
+    }
+
+    private fun handleLocation(): Response {
+        val resp = JSONObject()
+        try {
+            val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+            val providers = lm.getProviders(true)
+            var location: android.location.Location? = null
+            for (provider in providers) {
+                val loc = lm.getLastKnownLocation(provider)
+                if (loc != null && (location == null || loc.accuracy < location.accuracy)) {
+                    location = loc
+                }
+            }
+            if (location != null) {
+                resp.put("latitude", location.latitude)
+                resp.put("longitude", location.longitude)
+                resp.put("accuracy", location.accuracy)
+                resp.put("provider", location.provider)
+                resp.put("timestamp", location.time)
+            } else {
+                resp.put("error", "no location available")
+            }
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
+    }
+
+    private fun handleCamera(): Response {
+        val resp = JSONObject()
+        try {
+            val intent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            resp.put("status", "camera launched")
+            resp.put("note", "Take a photo, then I'll pull it from DCIM/Camera")
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
         return jsonResponse(resp)
     }
 
