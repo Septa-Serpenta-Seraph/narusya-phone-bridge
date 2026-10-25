@@ -392,7 +392,10 @@ class BridgeServer(
         }
 
         try {
-            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+            val handler = android.os.Handler(android.os.Looper.getMainLooper())
+            handler.post {
+                android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+            }
             resp.put("status", "shown")
             resp.put("message", message)
         } catch (e: Exception) {
