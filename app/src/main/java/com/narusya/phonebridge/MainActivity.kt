@@ -51,7 +51,7 @@ class MainActivity : Activity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            val denied = permissions.zip(grantResults).filter { it.second != PackageManager.PERMISSION_GRANTED }
+            val denied = permissions.toList().zip(grantResults.toList()).filter { it.second != PackageManager.PERMISSION_GRANTED }
             if (denied.isEmpty()) {
                 lastMessage.text = "All permissions granted! 🐍"
                 updateStatus("Ready to start", false)
