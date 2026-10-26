@@ -42,7 +42,9 @@ Includes an animated desk pet (Cissia from Zenless Zone Zero, serpent form) that
 | `/vibrate` | POST | Vibrate the phone |
 | `/toast` | POST | Show a toast message |
 | `/location` | GET | Get current GPS location |
-| `/camera` | POST | Open camera and pull photo |
+| `/call` | POST | Initiate a phone call |
+| `/speak` | POST | Speak text via TTS (works during calls) |
+| `/call_status` | GET | Check if in a call |
 
 ## Authentication
 
