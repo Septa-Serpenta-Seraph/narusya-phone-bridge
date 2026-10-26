@@ -1,6 +1,8 @@
 package com.narusya.phonebridge
 
-import android.app.Activity
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.content.Intent
 import android.graphics.drawable.AnimationDrawable
 import android.os.Bundle
@@ -22,7 +24,41 @@ class MainActivity : Activity() {
     private lateinit var petView: ImageView
     private var isServiceRunning = false
     private val handler = Handler(Looper.getMainLooper())
+    private val PERMISSIONS = arrayOf(
+        Manifest.permission.CAMERA,
+        Manifest.permission.SEND_SMS,
+        Manifest.permission.READ_SMS,
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.READ_PHONE_STATE,
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.VIBRATE
+    )
+
+    private val PERMISSION_REQUEST_CODE = 1001
     private val token = "narusya-bridge-2026"
+
+    private fun requestPermissionsIfNeeded() {
+        val needed = PERMISSIONS.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (needed.isNotEmpty()) {
+            requestPermissions(needed.toTypedArray(), PERMISSION_REQUEST_CODE)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            val denied = permissions.zip(grantResults).filter { it.second != PackageManager.PERMISSION_GRANTED }
+            if (denied.isEmpty()) {
+                lastMessage.text = "All permissions granted! 🐍"
+                updateStatus("Ready to start", false)
+            } else {
+                lastMessage.text = "Some permissions denied: ${denied.map { it.first.split(".").last() }.joinToString()}"
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,6 +69,8 @@ class MainActivity : Activity() {
         batteryText = findViewById(R.id.batteryText)
         lastMessage = findViewById(R.id.lastMessage)
         petView = findViewById(R.id.petView)
+
+        requestPermissionsIfNeeded()
 
         val btnStart = findViewById<Button>(R.id.btnStart)
         val btnStop = findViewById<Button>(R.id.btnStop)
