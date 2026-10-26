@@ -543,8 +543,14 @@ class BridgeServer(
             }
             resp.put("call_state", state)
             resp.put("in_call", state != "idle")
+            // Add telephony info
+            resp.put("has_telephony", true)
+            resp.put("network_operator", tm.networkOperatorName ?: "unknown")
+            resp.put("sim_state", tm.simState)
+            resp.put("phone_type", tm.phoneType)
         } catch (e: Exception) {
             resp.put("error", e.message)
+            resp.put("has_telephony", false)
         }
         return jsonResponse(resp)
     }
