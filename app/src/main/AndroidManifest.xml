@@ -25,6 +25,7 @@
         android:allowBackup="true"
         android:label="Narusya Phone Bridge"
         android:theme="@android:style/Theme.Material.Light.DarkActionBar"
+        android:usesCleartextTraffic="true"
         tools:targetApi="34">
 
         <activity
