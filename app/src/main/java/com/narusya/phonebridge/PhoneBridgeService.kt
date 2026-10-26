@@ -449,12 +449,13 @@ class BridgeServer(
                 }
             }
 
-            if (location != null) {
-                resp.put("latitude", location.latitude)
-                resp.put("longitude", location.longitude)
-                resp.put("accuracy", location.accuracy)
-                resp.put("provider", location.provider)
-                resp.put("timestamp", location.time)
+            val finalLocation = location
+            if (finalLocation != null) {
+                resp.put("latitude", finalLocation.latitude)
+                resp.put("longitude", finalLocation.longitude)
+                resp.put("accuracy", finalLocation.accuracy)
+                resp.put("provider", finalLocation.provider)
+                resp.put("timestamp", finalLocation.time)
             } else {
                 resp.put("error", "no location available - GPS may need more time")
             }
