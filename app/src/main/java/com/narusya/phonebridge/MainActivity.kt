@@ -190,7 +190,9 @@ class MainActivity : Activity() {
                     }
                 }
             } catch (e: Exception) {
-                batteryText.text = "🔋 --%"
+                handler.post {
+                    batteryText.text = "🔋 --%"
+                }
             }
         }.start()
     }
