@@ -71,7 +71,9 @@ class MainActivity : Activity() {
         lastMessage = findViewById(R.id.lastMessage)
         petView = findViewById(R.id.petView)
 
-        requestPermissionsIfNeeded()
+        handler.postDelayed({
+            requestPermissionsIfNeeded()
+        }, 500)
 
         val btnStart = findViewById<Button>(R.id.btnStart)
         val btnStop = findViewById<Button>(R.id.btnStop)
