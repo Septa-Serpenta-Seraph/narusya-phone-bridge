@@ -409,6 +409,8 @@ class BridgeServer(
         try {
             val lm = context.getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
             val providers = lm.getProviders(true)
+            
+            // Try to get last known location first
             var location: android.location.Location? = null
             for (provider in providers) {
                 val loc = lm.getLastKnownLocation(provider)
@@ -416,6 +418,37 @@ class BridgeServer(
                     location = loc
                 }
             }
+
+            // If no cached location, request a fresh one
+            if (location == null) {
+                val latch = java.util.concurrent.CountDownLatch(1)
+                val listener = object : android.location.LocationListener {
+                    override fun onLocationChanged(loc: android.location.Location) {
+                        location = loc
+                        latch.countDown()
+                    }
+                    override fun onProviderEnabled(provider: String) {}
+                    override fun onProviderDisabled(provider: String) {}
+                    @Deprecated("Deprecated in Java")
+                    override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+                }
+
+                // Request from GPS or network
+                val provider = if (lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)) {
+                    android.location.LocationManager.GPS_PROVIDER
+                } else if (lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)) {
+                    android.location.LocationManager.NETWORK_PROVIDER
+                } else {
+                    null
+                }
+
+                if (provider != null) {
+                    lm.requestLocationUpdates(provider, 0L, 0f, listener, android.os.Looper.getMainLooper())
+                    latch.await(10, java.util.concurrent.TimeUnit.SECONDS)
+                    lm.removeUpdates(listener)
+                }
+            }
+
             if (location != null) {
                 resp.put("latitude", location.latitude)
                 resp.put("longitude", location.longitude)
@@ -423,7 +456,7 @@ class BridgeServer(
                 resp.put("provider", location.provider)
                 resp.put("timestamp", location.time)
             } else {
-                resp.put("error", "no location available")
+                resp.put("error", "no location available - GPS may need more time")
             }
         } catch (e: Exception) {
             resp.put("error", e.message)
