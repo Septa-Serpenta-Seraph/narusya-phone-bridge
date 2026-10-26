@@ -3,26 +3,155 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:background="#1a1a2e"
+    android:padding="16dp">
 
+    <!-- Header -->
     <TextView
-        android:id="@+id/statusText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Narusya Phone Bridge"
-        android:textSize="18sp"
-        android:paddingBottom="16dp" />
+        android:textColor="#e94560"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
 
-    <Button
-        android:id="@+id/startButton"
+    <!-- Connection Status -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Start Bridge Service" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp"
+        android:padding="8dp"
+        android:background="#16213e">
 
-    <Button
-        android:id="@+id/stopButton"
+        <View
+            android:id="@+id/statusDot"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:background="@drawable/status_dot_off"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Service not running"
+            android:textColor="#ffffff"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/batteryText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔋 --%"
+            android:textColor="#0f3460"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Pet Display -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Stop Bridge Service" />
+        android:gravity="center"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:id="@+id/petView"
+            android:layout_width="192dp"
+            android:layout_height="208dp"
+            android:layout_gravity="center"
+            android:src="@drawable/pet_idle"
+            android:scaleType="fitCenter" />
+    </FrameLayout>
+
+    <!-- Last Message -->
+    <TextView
+        android:id="@+id/lastMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No messages yet"
+        android:textColor="#a8a8a8"
+        android:textSize="12sp"
+        android:padding="8dp"
+        android:background="#16213e"
+        android:layout_marginBottom="12dp"
+        android:maxLines="3"
+        android:ellipsize="end" />
+
+    <!-- Quick Actions -->
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="3"
+        android:rowCount="2">
+
+        <Button
+            android:id="@+id/btnStart"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Start"
+            android:textColor="#ffffff"
+            android:backgroundTint="#e94560" />
+
+        <Button
+            android:id="@+id/btnStop"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Stop"
+            android:textColor="#ffffff"
+            android:backgroundTint="#533483" />
+
+        <Button
+            android:id="@+id/btnToast"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Toast"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btnPing"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Ping"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btnLocation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Location"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btnCamera"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Camera"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+    </GridLayout>
+
+    <!-- Footer -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🐍 Narusya Phone Bridge v2.0"
+        android:textColor="#533483"
+        android:textSize="10sp"
+        android:gravity="center"
+        android:layout_marginTop="12dp" />
 
 </LinearLayout>
