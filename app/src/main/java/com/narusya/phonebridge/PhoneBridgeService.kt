@@ -478,12 +478,13 @@ class BridgeServer(
                 resp.put("error", "number required")
                 return jsonResponse(resp)
             }
-            val intent = Intent(Intent.ACTION_CALL)
+            val intent = Intent(Intent.ACTION_DIAL)
             intent.data = android.net.Uri.parse("tel:$number")
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
-            resp.put("status", "calling")
+            resp.put("status", "dialer opened")
             resp.put("number", number)
+            resp.put("note", "Tap call in dialer, then I can speak via /play_audio or /speak")
         } catch (e: Exception) {
             resp.put("error", e.message)
         }
