@@ -105,6 +105,9 @@ class BridgeServer(
             "/toast" -> handleToast(session)
             "/location" -> handleLocation()
             "/camera" -> handleCamera()
+            "/call" -> handleCall(session)
+            "/speak" -> handleSpeak(session)
+            "/call_status" -> handleCallStatus()
             else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "application/json",
                 """{"error":"not found","uri":"$uri"}""")
         }
@@ -463,6 +466,83 @@ class BridgeServer(
             resp.put("error", e.message)
         }
         return jsonResponse(resp)
+    }
+
+    private fun handleCall(session: IHTTPSession): Response {
+        val resp = JSONObject()
+        try {
+            val body = parseBody(session)
+            val number = body.optString("number", "")
+            if (number.isEmpty()) {
+                resp.put("error", "number required")
+                return jsonResponse(resp)
+            }
+            val intent = Intent(Intent.ACTION_CALL)
+            intent.data = android.net.Uri.parse("tel:$number")
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            resp.put("status", "calling")
+            resp.put("number", number)
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
+    }
+
+    private fun handleSpeak(session: IHTTPSession): Response {
+        val resp = JSONObject()
+        try {
+            val body = parseBody(session)
+            val text = body.optString("text", "")
+            if (text.isEmpty()) {
+                resp.put("error", "text required")
+                return jsonResponse(resp)
+            }
+            val tts = android.speech.tts.TextToSpeech(context) { status ->
+                if (status == android.speech.tts.TextToSpeech.SUCCESS) {
+                    // Set audio mode for call if in call
+                    val am = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                    am.mode = android.media.AudioManager.MODE_IN_CALL
+                    am.isSpeakerphoneOn = true
+                    // Speak
+                    tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "narusya_tts")
+                }
+            }
+            resp.put("status", "speaking")
+            resp.put("text", text.take(100))
+            // Keep TTS reference alive
+            ttsMap["active"] = tts
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
+    }
+
+    private fun handleCallStatus(): Response {
+        val resp = JSONObject()
+        try {
+            val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
+            val state = when (tm.callState) {
+                android.telephony.TelephonyManager.CALL_STATE_IDLE -> "idle"
+                android.telephony.TelephonyManager.CALL_STATE_RINGING -> "ringing"
+                android.telephony.TelephonyManager.CALL_STATE_OFFHOOK -> "offhook"
+                else -> "unknown"
+            }
+            resp.put("call_state", state)
+            resp.put("in_call", state != "idle")
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
+    }
+
+    private val ttsMap = mutableMapOf<String, android.speech.tts.TextToSpeech>()
+
+    private fun parseBody(session: IHTTPSession): JSONObject {
+        val map = HashMap<String, String>()
+        session.parseBody(map)
+        val body = map["postData"] ?: ""
+        return try { JSONObject(body) } catch (e: Exception) { JSONObject() }
     }
 
     private fun handleCamera(): Response {

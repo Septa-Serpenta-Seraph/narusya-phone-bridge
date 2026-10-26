@@ -35,6 +35,7 @@ class MainActivity : Activity() {
         Manifest.permission.READ_MEDIA_IMAGES,
         Manifest.permission.READ_MEDIA_VIDEO,
         Manifest.permission.READ_MEDIA_AUDIO,
+        Manifest.permission.CALL_PHONE,
         Manifest.permission.VIBRATE
     )
 
@@ -118,6 +119,23 @@ class MainActivity : Activity() {
         val btnLocation = findViewById<Button>(R.id.btnLocation)
         val btnCamera = findViewById<Button>(R.id.btnCamera)
         val btnSettings = findViewById<Button>(R.id.btnSettings)
+        val btnCall = findViewById<Button>(R.id.btnCall)
+        val btnSpeak = findViewById<Button>(R.id.btnSpeak)
+
+        btnCall.setOnClickListener {
+            setPetState(PetState.THINKING)
+            // Use a hardcoded test number or ask
+            lastMessage.text = "Call: enter number via API /call"
+            setPetState(PetState.IDLE)
+        }
+
+        btnSpeak.setOnClickListener {
+            setPetState(PetState.THINKING)
+            sendCommand("/speak", """{"text":"Hello from Narusya"}""") { result ->
+                lastMessage.text = "Speak: $result"
+                setPetState(PetState.IDLE)
+            }
+        }
 
         btnSettings.setOnClickListener {
             showSettingsDialog()

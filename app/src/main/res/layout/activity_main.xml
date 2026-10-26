@@ -87,7 +87,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:columnCount="3"
-        android:rowCount="2">
+        android:rowCount="4">
 
         <Button
             android:id="@+id/btnStart"
@@ -151,6 +151,24 @@
             android:text="Settings"
             android:textColor="#ffffff"
             android:backgroundTint="#533483" />
+
+        <Button
+            android:id="@+id/btnCall"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Call"
+            android:textColor="#ffffff"
+            android:backgroundTint="#e94560" />
+
+        <Button
+            android:id="@+id/btnSpeak"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Speak"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
     </GridLayout>
 
     <TextView
