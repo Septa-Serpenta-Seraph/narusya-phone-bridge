@@ -45,6 +45,7 @@ Includes an animated desk pet (Cissia from Zenless Zone Zero, serpent form) that
 | `/call` | POST | Initiate a phone call |
 | `/speak` | POST | Speak text via TTS (works during calls) |
 | `/call_status` | GET | Check if in a call |
+| `/play_audio` | POST | Play base64-encoded audio (WAV/MP3) during calls |
 
 ## Authentication
 
