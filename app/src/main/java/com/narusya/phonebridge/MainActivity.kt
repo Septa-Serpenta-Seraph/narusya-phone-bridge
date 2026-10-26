@@ -9,7 +9,7 @@ import android.os.Looper
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.View
+import android.view.View
 import java.net.HttpURLConnection
 import java.net.URL
 
