@@ -498,20 +498,32 @@ class BridgeServer(
                 resp.put("error", "text required")
                 return jsonResponse(resp)
             }
-            val tts = android.speech.tts.TextToSpeech(context) { status ->
-                if (status == android.speech.tts.TextToSpeech.SUCCESS) {
-                    // Set audio mode for call if in call
+            // Use a thread to init TTS and speak
+            Thread {
+                try {
+                    val tts = android.speech.tts.TextToSpeech(context) { status ->
+                        // init callback
+                    }
+                    // Wait for init
+                    var ready = false
+                    var attempts = 0
+                    while (!ready && attempts < 50) {
+                        Thread.sleep(100)
+                        attempts++
+                        // Check if TTS is ready by trying to speak
+                        if (tts.voices != null) ready = true
+                    }
                     val am = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
                     am.mode = android.media.AudioManager.MODE_IN_CALL
                     am.isSpeakerphoneOn = true
-                    // Speak
                     tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "narusya_tts")
+                    ttsMap["active"] = tts
+                } catch (e: Exception) {
+                    Log.e("PhoneBridge", "TTS error: ${e.message}")
                 }
-            }
+            }.start()
             resp.put("status", "speaking")
             resp.put("text", text.take(100))
-            // Keep TTS reference alive
-            ttsMap["active"] = tts
         } catch (e: Exception) {
             resp.put("error", e.message)
         }
