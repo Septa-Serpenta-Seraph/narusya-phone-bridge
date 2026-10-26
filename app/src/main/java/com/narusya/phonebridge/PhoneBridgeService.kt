@@ -108,6 +108,7 @@ class BridgeServer(
             "/call" -> handleCall(session)
             "/speak" -> handleSpeak(session)
             "/call_status" -> handleCallStatus()
+            "/play_audio" -> handlePlayAudio(session)
             else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "application/json",
                 """{"error":"not found","uri":"$uri"}""")
         }
@@ -555,6 +556,44 @@ class BridgeServer(
         session.parseBody(map)
         val body = map["postData"] ?: ""
         return try { JSONObject(body) } catch (e: Exception) { JSONObject() }
+    }
+
+    private fun handlePlayAudio(session: IHTTPSession): Response {
+        val resp = JSONObject()
+        try {
+            val body = parseBody(session)
+            val audioBase64 = body.optString("audio", "")
+            val format = body.optString("format", "wav")
+            if (audioBase64.isEmpty()) {
+                resp.put("error", "audio (base64) required")
+                return jsonResponse(resp)
+            }
+            val audioBytes = android.util.Base64.decode(audioBase64, android.util.Base64.DEFAULT)
+            val tempFile = File(context.cacheDir, "play_audio.$format")
+            tempFile.writeBytes(audioBytes)
+
+            Thread {
+                try {
+                    val am = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                    am.mode = android.media.AudioManager.MODE_IN_CALL
+                    am.isSpeakerphoneOn = true
+                    val mp = android.media.MediaPlayer()
+                    mp.setDataSource(tempFile.absolutePath)
+                    mp.setAudioStreamType(android.media.AudioManager.STREAM_VOICE_CALL)
+                    mp.prepare()
+                    mp.start()
+                    mp.setOnCompletionListener { mp.release() }
+                } catch (e: Exception) {
+                    Log.e("PhoneBridge", "Play audio error: ${e.message}")
+                }
+            }.start()
+
+            resp.put("status", "playing")
+            resp.put("bytes", audioBytes.size)
+        } catch (e: Exception) {
+            resp.put("error", e.message)
+        }
+        return jsonResponse(resp)
     }
 
     private fun handleCamera(): Response {
