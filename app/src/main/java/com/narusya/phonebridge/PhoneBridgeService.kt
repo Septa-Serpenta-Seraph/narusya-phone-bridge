@@ -453,7 +453,7 @@ class BridgeServer(
             if (finalLocation != null) {
                 resp.put("latitude", finalLocation.latitude)
                 resp.put("longitude", finalLocation.longitude)
-                resp.put("accuracy", finalLocation.accuracy)
+                resp.put("accuracy", finalLocation.accuracy.toDouble())
                 resp.put("provider", finalLocation.provider)
                 resp.put("timestamp", finalLocation.time)
             } else {

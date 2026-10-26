@@ -142,9 +142,17 @@
             android:text="Camera"
             android:textColor="#ffffff"
             android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btnSettings"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Settings"
+            android:textColor="#ffffff"
+            android:backgroundTint="#533483" />
     </GridLayout>
 
-    <!-- Footer -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

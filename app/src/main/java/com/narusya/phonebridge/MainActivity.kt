@@ -40,6 +40,40 @@ class MainActivity : Activity() {
 
     private val PERMISSION_REQUEST_CODE = 1001
     private val token = "narusya-bridge-2026"
+    enum class PetState { IDLE, EXCITED, THINKING, SLEEPING }
+
+    private var currentPetState = PetState.SLEEPING
+    private var petEnabled = true
+    private var reactToEvents = true
+    private var animationSpeed = 1.0f // 1.0 = normal, 0.5 = slow, 2.0 = fast
+
+    private fun setPetState(state: PetState) {
+        if (!petEnabled) return
+        currentPetState = state
+        when (state) {
+            PetState.IDLE -> {
+                petView.setBackgroundResource(R.drawable.pet_idle)
+                (petView.background as? AnimationDrawable)?.start()
+            }
+            PetState.EXCITED -> {
+                petView.setBackgroundResource(R.drawable.pet_excited_anim)
+                (petView.background as? AnimationDrawable)?.start()
+                // Return to idle after 3 seconds
+                handler.postDelayed({
+                    if (currentPetState == PetState.EXCITED) {
+                        setPetState(PetState.IDLE)
+                    }
+                }, 3000)
+            }
+            PetState.THINKING -> {
+                petView.setBackgroundResource(R.drawable.pet_thinking_anim)
+                (petView.background as? AnimationDrawable)?.start()
+            }
+            PetState.SLEEPING -> {
+                petView.setBackgroundResource(R.drawable.pet_sleeping)
+            }
+        }
+    }
 
     private fun requestPermissionsIfNeeded() {
         val needed = PERMISSIONS.filter {
@@ -83,6 +117,11 @@ class MainActivity : Activity() {
         val btnPing = findViewById<Button>(R.id.btnPing)
         val btnLocation = findViewById<Button>(R.id.btnLocation)
         val btnCamera = findViewById<Button>(R.id.btnCamera)
+        val btnSettings = findViewById<Button>(R.id.btnSettings)
+
+        btnSettings.setOnClickListener {
+            showSettingsDialog()
+        }
 
         // Start pet animation
         startPetAnimation()
@@ -92,6 +131,7 @@ class MainActivity : Activity() {
             startForegroundService(intent)
             isServiceRunning = true
             updateStatus("Service running on port 8765", true)
+            setPetState(PetState.IDLE)
             startPolling()
         }
 
@@ -100,27 +140,38 @@ class MainActivity : Activity() {
             stopService(intent)
             isServiceRunning = false
             updateStatus("Service stopped", false)
+            setPetState(PetState.SLEEPING)
             stopPolling()
         }
 
         btnToast.setOnClickListener {
-            sendCommand("/toast", """{"message":"Hello from Narusya! 🐍"}""")
+            setPetState(PetState.THINKING)
+            sendCommand("/toast", """{"message":"Hello from Narusya! 🐍"}""") {
+                setPetState(PetState.IDLE)
+            }
         }
 
         btnPing.setOnClickListener {
-            sendCommand("/notify", """{"title":"Narusya","message":"Ping from phone!"}""")
+            setPetState(PetState.THINKING)
+            sendCommand("/notify", """{"title":"Narusya","message":"Ping from phone!"}""") {
+                setPetState(PetState.EXCITED)
+            }
             lastMessage.text = "Ping sent!"
         }
 
         btnLocation.setOnClickListener {
+            setPetState(PetState.THINKING)
             sendCommand("/location", null) { result ->
                 lastMessage.text = "Location: $result"
+                setPetState(PetState.IDLE)
             }
         }
 
         btnCamera.setOnClickListener {
+            setPetState(PetState.THINKING)
             sendCommand("/camera", null) { result ->
                 lastMessage.text = "Camera: $result"
+                setPetState(PetState.IDLE)
             }
         }
 
@@ -226,5 +277,48 @@ class MainActivity : Activity() {
                 }
             }
         }.start()
+    private fun showSettingsDialog() {
+        val prefs = getSharedPreferences("pet_settings", MODE_PRIVATE)
+        petEnabled = prefs.getBoolean("pet_enabled", true)
+        reactToEvents = prefs.getBoolean("react_to_events", true)
+
+        val options = arrayOf(
+            "Pet: ${if (petEnabled) "ON" else "OFF"}",
+            "React to events: ${if (reactToEvents) "ON" else "OFF"}",
+            "Reset pet state"
+        )
+
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle("Pet Settings 🐍")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        petEnabled = !petEnabled
+                        prefs.edit().putBoolean("pet_enabled", petEnabled).apply()
+                        if (petEnabled) {
+                            petView.visibility = android.view.View.VISIBLE
+                            setPetState(PetState.IDLE)
+                            lastMessage.text = "Pet enabled! 🐍"
+                        } else {
+                            petView.visibility = android.view.View.INVISIBLE
+                            lastMessage.text = "Pet disabled"
+                        }
+                        showSettingsDialog()
+                    }
+                    1 -> {
+                        reactToEvents = !reactToEvents
+                        prefs.edit().putBoolean("react_to_events", reactToEvents).apply()
+                        lastMessage.text = "React to events: ${if (reactToEvents) "ON" else "OFF"}"
+                        showSettingsDialog()
+                    }
+                    2 -> {
+                        setPetState(PetState.IDLE)
+                        lastMessage.text = "Pet state reset"
+                    }
+                }
+            }
+            .setNegativeButton("Close", null)
+            .create()
+        dialog.show()
     }
 }
