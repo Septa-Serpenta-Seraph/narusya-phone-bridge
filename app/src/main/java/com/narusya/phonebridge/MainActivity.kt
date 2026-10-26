@@ -277,6 +277,8 @@ class MainActivity : Activity() {
                 }
             }
         }.start()
+    }
+
     private fun showSettingsDialog() {
         val prefs = getSharedPreferences("pet_settings", MODE_PRIVATE)
         petEnabled = prefs.getBoolean("pet_enabled", true)
